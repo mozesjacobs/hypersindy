@@ -79,12 +79,12 @@ class HyperSINDy:
         Returns:
             self: The fitted HyperSINDy model.
         """
-        
-        # Set device
-        self.set_device(device)
 
         # Build / reset model
         self.__reset(device, dt)
+
+        # Set device
+        self.set_device(device)
 
         # Prepare dataset
         trainset = self.__prep_dataset(x, dt)
