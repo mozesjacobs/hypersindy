@@ -12,6 +12,7 @@ dependencies:
   - jupyterlab
   - pip
   - pip:
+    - numpy
     - pysindy
     - tqdm
     - torch
