@@ -15,4 +15,4 @@ To use HyperSINDy, first install it using pip:
 Examples
 ----------------
 
-The differente examples are 
+The different examples are 

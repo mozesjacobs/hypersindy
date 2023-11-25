@@ -36,5 +36,21 @@ html_theme = 'classic'
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
 
-# Hypersind path
+# HyperSINDy path
+#sys.path.append(os.path.abspath('../src/hypersindy/'))
 sys.path.append(os.path.abspath('../../src/'))
+
+#try:
+#  import hypersindy
+  #from .hypersindy import HyperSINDy
+#  print(hypersindy.HyperSINDy())
+  #print(help(hypersindy))
+  #from .hypersindy import HyperSINDy
+  #print(dir(hypersindy))
+  #print(hypersindy['__package__'])
+  #print(hypersindy)
+  #print(HyperSINDy())
+  #from hypersindy import HyperSINDy
+  #import hypersindy.HyperSINDy
+#except ImportError:
+#  print("oh no 2")
