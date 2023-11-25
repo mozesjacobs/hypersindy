@@ -39,7 +39,11 @@ epub_show_urls = 'footnote'
 # HyperSINDy path
 #sys.path.append(os.path.abspath('../src/hypersindy/'))
 #sys.path.append(os.path.abspath('../../src/'))
-sys.path.append(os.path.abspath('src/'))
+#sys.path.append(os.path.abspath('./src/'))
+#sys.path.append(os.path.abspath('../src/'))
+sys.path.append(os.path.abspath('.src/'))
+#sys.path.append(os.path.abspath('.src/hypersindy'))
+#print(os.getcwd())
 
 #try:
 #  import hypersindy
