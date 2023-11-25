@@ -1,6 +1,6 @@
 import sys
 import pickle
-import torch
+#import torch
 
 from hypersindy.net import Net
 from hypersindy.library import Library
