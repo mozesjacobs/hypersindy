@@ -6,7 +6,7 @@ HyperSINDy API Reference
 
    hypersindy
 
-The "meow" module1
+The "meow" module2
 ------------------
 
 .. autofunction:: hypersindy.HyperSINDy
