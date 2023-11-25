@@ -6,13 +6,10 @@ HyperSINDy API Reference
 
    hypersindy
 
-.. automodule:: hypersindy
-   :members:
-
 The "meow" module
 ------------------
 
-.. automodule:: hypersindy.hypersindy
+.. automodule:: hypersindy
    :members:
 
 .. autofunction:: hypersindy.HyperSINDy

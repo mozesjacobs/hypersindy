@@ -47,7 +47,7 @@ class HyperSINDy:
         Returns:
             A HyperSINDy().
         """
-        #super(HyperSINDy, self).__init__()
+        
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.poly_order = poly_order
@@ -55,6 +55,7 @@ class HyperSINDy:
         self.hidden_dim = hidden_dim
         self.stat_batch_size = stat_batch_size
         self.num_hidden = num_hidden
+
 
     def fit(self, x, dt, device,
             beta, beta_warmup_epoch, beta_spike, beta_spike_epoch,

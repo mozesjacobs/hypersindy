@@ -31,9 +31,10 @@ templates_path = ['_templates']
 # -- Options for HTML output
 
 html_theme = 'sphinx_rtd_theme'
+#html_theme = 'classic'
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
 
 # Hypersind path
-sys.path.append(os.path.abspath('../src/hypersindy'))
+sys.path.append(os.path.abspath('../../src/'))
