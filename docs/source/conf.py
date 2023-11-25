@@ -1,3 +1,6 @@
+import os
+import sys
+
 # -- Project information
 
 project = 'HyperSINDy'
@@ -31,3 +34,6 @@ html_theme = 'sphinx_rtd_theme'
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
+
+# Hypersind path
+sys.path.append(os.path.abspath('../src/hypersindy'))
