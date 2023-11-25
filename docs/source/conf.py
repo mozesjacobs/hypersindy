@@ -44,6 +44,22 @@ epub_show_urls = 'footnote'
 #sys.path.append(os.path.abspath('.src/'))
 #sys.path.append(os.path.abspath('.src/hypersindy'))
 #print(os.getcwd())
+
+#scipy
+#seaborn
+#tensorboard
+#matplotlib
+#scikit-learn
+#pandas
+#jupyterlab
+#numpy
+#torch
+#pysindy
+#tqdm
+#torchvision
+
+autodoc_mock_imports = ['scipy', 'seaborn', 'tensorboard', 'matplotlib', 'scikit-learn', 'pandas', 'jupyterlab', 'numpy', 'torch', 'pysindy', 'tqdm', 'torchvision']
+
 sys.path.append(os.path.abspath('../../src/'))
 
 #try:
