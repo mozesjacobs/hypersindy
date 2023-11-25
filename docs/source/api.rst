@@ -6,11 +6,11 @@ HyperSINDy API Reference
 
    hypersindy
 
-The "meow" module3
+The "meow" module4
 ------------------
 
-#.. automodule:: hypersindy
+.. automodule:: hypersindy
 
-#.. autofunction:: hypersindy.HyperSINDy
+.. autofunction:: hypersindy.HyperSINDy
 
 .. autofunction:: hypersindy.HyperSINDy.fit
