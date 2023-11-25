@@ -15,6 +15,6 @@ The "meow" module
 .. automodule:: hypersindy.hypersindy
    :members:
 
-.. autofunction:: hypersindy.hypersindy.HyperSINDy
+.. autofunction:: hypersindy.HyperSINDy
 
-.. autofunction:: hypersindy.hypersindy.HyperSINDy.fit
+.. autofunction:: hypersindy.HyperSINDy.fit
