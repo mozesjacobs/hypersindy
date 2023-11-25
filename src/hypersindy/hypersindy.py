@@ -34,7 +34,7 @@ class HyperSINDy:
 
         Initializes the HyperSINDy network.
 
-        Parameters:
+        Args:
             x_dim: The spatial dimension (int) of the data.
             z_dim: An int of the size of the latent vector (z) to be fed
                 into the hypernetwork. Recommended: 2 times x_dim
@@ -47,7 +47,7 @@ class HyperSINDy:
         Returns:
             A HyperSINDy().
         """
-        
+
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.poly_order = poly_order
