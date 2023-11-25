@@ -9,9 +9,6 @@ HyperSINDy API Reference
 The "meow" module1
 ------------------
 
-.. automodule:: hypersindy
-   :members:
-
 .. autofunction:: hypersindy.HyperSINDy
 
 .. autofunction:: hypersindy.HyperSINDy.fit
