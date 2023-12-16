@@ -271,6 +271,19 @@ class HyperSINDy:
         self.set_device(device)
         return self
 
+    def to(self, device):
+        """Wrapped to sets the device.
+
+        Sets the device to use the model on.
+
+        Args:
+            device: The cpu or gpu device to use.
+        
+        Returns:
+            self: The fitted HyperSINDy model.
+        """
+        return self.set_device(device)
+
     def set_device(self, device):
         """Sets the device.
 
