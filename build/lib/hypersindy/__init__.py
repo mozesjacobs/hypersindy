@@ -1,3 +1,1 @@
-"""hypersindy base imports"""
-
-import hypersindy
+from .hypersindy import HyperSINDy

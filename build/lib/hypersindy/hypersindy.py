@@ -1,4 +1,5 @@
 import sys
+import pickle
 import torch
 
 from hypersindy.net import Net
@@ -10,6 +11,7 @@ from hypersindy.utils import set_random_seed
 
 
 class HyperSINDy:
+#class HyperSINDy(torch.nn.Module):
     """A HyperSINDy model.
 
     The HyperSINDy model that can be fit on data to discover a distribution of
@@ -32,7 +34,7 @@ class HyperSINDy:
 
         Initializes the HyperSINDy network.
 
-        Parameters:
+        Args:
             x_dim: The spatial dimension (int) of the data.
             z_dim: An int of the size of the latent vector (z) to be fed
                 into the hypernetwork. Recommended: 2 times x_dim
@@ -45,6 +47,7 @@ class HyperSINDy:
         Returns:
             A HyperSINDy().
         """
+
         self.x_dim = x_dim
         self.z_dim = z_dim
         self.poly_order = poly_order
@@ -53,12 +56,14 @@ class HyperSINDy:
         self.stat_batch_size = stat_batch_size
         self.num_hidden = num_hidden
 
+
     def fit(self, x, dt, device,
             beta, beta_warmup_epoch, beta_spike, beta_spike_epoch,
             lmda_init, lmda_spike, lmda_spike_epoch,
             checkpoint_interval=50, eval_interval=50,
             learning_rate=5e-3, hard_threshold=0.05, threshold_interval=100,
-            epochs=499, batch_size=250, run_path=None):
+            epochs=499, batch_size=250, clip=1.0, gamma_factor=0.999,
+            adam_reg=1e-5, run_path=None):
         """Trains the HyperSINDy model.
 
         Trains the HyperSINDy model on the given data using the given
@@ -76,12 +81,12 @@ class HyperSINDy:
         Returns:
             self: The fitted HyperSINDy model.
         """
-        
-        # Set device
-        self.set_device(device)
 
         # Build / reset model
         self.__reset(device, dt)
+
+        # Set device
+        self.set_device(device)
 
         # Prepare dataset
         trainset = self.__prep_dataset(x, dt)
@@ -91,10 +96,13 @@ class HyperSINDy:
             learning_rate, beta, beta_warmup_epoch, beta_spike, beta_spike_epoch,
             hard_threshold, threshold_interval, epochs, batch_size, lmda_init,
             lmda_spike, lmda_spike_epoch, device, checkpoint_interval,
-            eval_interval)
+            eval_interval, clip, gamma_factor, adam_reg)
 
         # Train
         trainer.train(trainset)
+
+        # Put model in eval mode
+        self.net = self.net.eval()
 
         return self
     
@@ -117,7 +125,7 @@ class HyperSINDy:
         Returns:
             self: The fitted HyperSINDy model.
         """
-        eqs = self.equations(self.net, self.library, self.device, round, seed)
+        eqs = self.equations(round, seed)
         orig = sys.stdout
         if fname is not None:
             sys.stdout = open(fname, "w")
@@ -157,7 +165,6 @@ class HyperSINDy:
         trajectories = torch.transpose(torch.stack(trajectories, dim=0), 0, 1)
         return trajectories.detach().cpu().numpy()
     
-    # get equations
     def equations(self, round=True, seed=None):
         """Gets the equations.
 
@@ -196,7 +203,7 @@ class HyperSINDy:
         """
         if batch_size is None:
             batch_size = self.stat_batch_size
-        return self.net.get_masked_coefficients(self, z, batch_size,
+        return self.net.get_masked_coefficients(z, batch_size,
             self.device)
     
     def transform(self, x):
@@ -231,41 +238,87 @@ class HyperSINDy:
         theta_x = self.transform(x)
         return torch.bmm(theta_x, coefs).squeeze(1)
     
-    def save(self):
-        pass
+    def save(self, fpath):
+        """Saves the model.
+
+        Saves the state dictionary of the learned network to the given fpath.
+
+        Args:
+            fpath: The name of the file to save the state dictionary to. Must
+                end in .pt.
+        
+        Returns:
+            self: The fitted HyperSINDy model.
+        """
+        torch.save(self.net.state_dict(), fpath)
+        return self
     
-    def load(self):
-        pass
+    def load(self, fpath, device='cpu'):
+        """Loads the model.
+
+        Loads the state dictionary of the learned network in the given fpath.
+        Loads the network in eval mode.
+
+        Args:
+            fpath: The name of the file to load the state dictionary from. Must
+                end in .pt.
+        
+        Returns:
+            self: The fitted HyperSINDy model.
+        """
+        self.__reset()
+        self.net.load_state_dict(torch.load(fpath))
+        self.net = self.net.eval()
+        self.set_device(device)
+        return self
 
     def set_device(self, device):
+        """Sets the device.
+
+        Sets the device to use the model on.
+
+        Args:
+            device: The cpu or gpu device to use.
+        
+        Returns:
+            self: The fitted HyperSINDy model.
+        """
         self.device = device
+        self.net = self.net.to(device)
         return self
 
     def __reset(self, device='cpu', dt=0.01):
+        """
+        Resets the model, as though training never occurred.
+        """
         self.library = Library(self.x_dim, self.poly_order,
                                self.include_constant)
         self.net = Net(self.library, self.z_dim, self.hidden_dim,
                        self.stat_batch_size, self.num_hidden).to(device)
+        self.net = self.net.train()
         self.dt = dt
         return self
     
     def __prep_dataset(self, x, dt):
+        """
+        Returns a DynamicDataset of x with the given dt.
+        """
         return DynamicDataset(x, self.transform(x), dt)
     
-    def __prep_trainer(self, run_path, optim, learning_rate, beta_max,
+    def __prep_trainer(self, run_path, learning_rate, beta_max,
         beta_max_epoch, beta_spike, beta_spike_epoch,
         hard_threshold, threshold_interval, epochs, batch_size, lmda_init,
         lmda_spike, lmda_spike_epoch, device, checkpoint_interval,
-        eval_interval):
+        eval_interval, clip, gamma_factor, adam_reg):
+        """
+        Returns a Trainer.
+        """
 
         # Hard-coded defaults - these work well in general
         beta_init = 0.01
         lmda_max = lmda_init
         lmda_max_epoch = 1
         optim = "AdamW"
-        clip = 1.0
-        adam_reg = 1e-5
-        gamma_factor = 0.999
         amsgrad =  True
 
         # Tensorboard and checkpoint paths

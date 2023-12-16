@@ -57,8 +57,8 @@ class HyperNet(nn.Module):
             layers.append(nn.Linear(in_features, out_features, bias=bias))
             layers.append(activation)
             in_features = out_features
-        #layers.append(nn.Linear(in_features, np.prod(self.out_shape), bias=bias))
-        layers.append(nn.Linear(in_features, torch.prod(self.out_shape), bias=bias))
+        layers.append(nn.Linear(in_features, np.prod(self.out_shape), bias=bias))
+        #layers.append(nn.Linear(in_features, torch.prod(self.out_shape), bias=bias))
         self.layers = nn.Sequential(*layers)
 
     def forward(self, n):

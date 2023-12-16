@@ -11,7 +11,6 @@ from hypersindy.utils import set_random_seed
 
 
 class HyperSINDy:
-#class HyperSINDy(torch.nn.Module):
     """A HyperSINDy model.
 
     The HyperSINDy model that can be fit on data to discover a distribution of
@@ -62,7 +61,8 @@ class HyperSINDy:
             lmda_init, lmda_spike, lmda_spike_epoch,
             checkpoint_interval=50, eval_interval=50,
             learning_rate=5e-3, hard_threshold=0.05, threshold_interval=100,
-            epochs=499, batch_size=250, run_path=None):
+            epochs=499, batch_size=250, clip=1.0, gamma_factor=0.999,
+            adam_reg=1e-5, run_path=None, num_workers=1):
         """Trains the HyperSINDy model.
 
         Trains the HyperSINDy model on the given data using the given
@@ -95,7 +95,7 @@ class HyperSINDy:
             learning_rate, beta, beta_warmup_epoch, beta_spike, beta_spike_epoch,
             hard_threshold, threshold_interval, epochs, batch_size, lmda_init,
             lmda_spike, lmda_spike_epoch, device, checkpoint_interval,
-            eval_interval)
+            eval_interval, clip, gamma_factor, adam_reg, num_workers)
 
         # Train
         trainer.train(trainset)
@@ -164,7 +164,6 @@ class HyperSINDy:
         trajectories = torch.transpose(torch.stack(trajectories, dim=0), 0, 1)
         return trajectories.detach().cpu().numpy()
     
-    # get equations
     def equations(self, round=True, seed=None):
         """Gets the equations.
 
@@ -309,7 +308,7 @@ class HyperSINDy:
         beta_max_epoch, beta_spike, beta_spike_epoch,
         hard_threshold, threshold_interval, epochs, batch_size, lmda_init,
         lmda_spike, lmda_spike_epoch, device, checkpoint_interval,
-        eval_interval):
+        eval_interval, clip, gamma_factor, adam_reg, num_workers):
         """
         Returns a Trainer.
         """
@@ -319,9 +318,6 @@ class HyperSINDy:
         lmda_max = lmda_init
         lmda_max_epoch = 1
         optim = "AdamW"
-        clip = 1.0
-        adam_reg = 1e-5
-        gamma_factor = 0.999
         amsgrad =  True
 
         # Tensorboard and checkpoint paths
@@ -338,5 +334,5 @@ class HyperSINDy:
                           lmda_init, lmda_max, lmda_max_epoch,
                           lmda_spike, lmda_spike_epoch,
                           clip, device, checkpoint_interval,
-                          eval_interval)
+                          eval_interval, num_workers)
         return trainer

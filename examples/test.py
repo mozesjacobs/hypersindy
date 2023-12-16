@@ -15,9 +15,9 @@ net = net.fit(x, dt=1e-2, device=device,
     learning_rate=5e-3, hard_threshold=0.05, threshold_interval=100,
     epochs=499, batch_size=250, run_path="runs/1")
 
-net.save("examples/runs/cp1.pt")
+net.save("runs/cp1.pt")
 #"""
 
-net = HyperSINDy().load("examples/runs/cp1.pt", device)
+net = HyperSINDy().load("runs/cp1.pt", device)
 #net.print()
 print(net.coefs(5))

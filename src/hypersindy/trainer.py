@@ -57,7 +57,7 @@ class Trainer():
                  lmda_init=1e-2, lmda_max=1e-2, lmda_max_epoch=1,
                  lmda_spike=None, lmda_spike_epoch=None,
                  clip=1.0, device=0, checkpoint_interval=50,
-                 eval_interval=50):
+                 eval_interval=50, num_workers=1):
         """Initializes the Trainer.
 
         Initializes the Trainer.
@@ -147,6 +147,7 @@ class Trainer():
         self.device = device
         self.checkpoint_interval = checkpoint_interval
         self.eval_interval = eval_interval
+        self.num_workers = num_workers
         
     def train(self, trainset):
         """Trains the network for on the dataset.
@@ -160,7 +161,7 @@ class Trainer():
             None.
         """
         trainloader = DataLoader(trainset, batch_size=self.batch_size,
-                                 shuffle=True, num_workers=1, drop_last=True)
+                                 shuffle=True, num_workers=self.num_workers, drop_last=True)
         for epoch in range(self.epochs):
             # one train step
             recons, klds, regs = self.train_epoch(trainloader)
