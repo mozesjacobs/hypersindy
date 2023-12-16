@@ -29,19 +29,22 @@ class HyperSINDy:
     """
     def __init__(self, x_dim=3, z_dim=6, poly_order=3, include_constant=True,
                  hidden_dim=64, stat_batch_size=250, num_hidden=5):
-        """Initalizes the network.
+        """Initalizes HyperSINDy.
 
-        Initializes the HyperSINDy network.
+        Initializes the HyperSINDy model.
 
         Args:
             x_dim: The spatial dimension (int) of the data.
             z_dim: An int of the size of the latent vector (z) to be fed
                 into the hypernetwork. Recommended: 2 times x_dim
-            poly_order: 
-            include_constant:
-            hidden_dim:
-            stat_batch_size:
-            num_hidden:
+            poly_order: The maximum order of the polynomial library (int)
+            include_constant: Iff True, includes a constant term in the library
+            hidden_dim: The dimension (int) of the hidden layers of the
+                hypernet and the encoder
+            stat_batch_size: The number (int) of samples to generate when
+                generating coefficients (e.g. for printing equations or
+                calculating mean / std)
+            num_hidden: The number (int) of hidden layers in the hypernetwork
 
         Returns:
             A HyperSINDy().
@@ -73,9 +76,37 @@ class HyperSINDy:
         Args:
             x: A torch.tensor of shape (batch_size x x_dim) for the state of
                 the system.
-            x_dot: A torch.tensor of shape (batch_size x x_dim) for the
-                derivative of x.
+            dt: The time (float) between adjacent state observations
+                (e.g. between x_t and x_t+1).
             device: The cpu or gpu device to fit the HyperSINDy model with.
+            beta: The weight (float) of the KL divergence term.
+            beta_warmup_epoch: The number (int) of epochs to warm up to reach
+                beta.
+            beta_spike: The beta value (int) to use to later in training.
+                Default: None (disables spiking)
+            beta_spike_epoch: The epoch (int) at which to spike to.
+                Default: None (disables spiking)
+            checkpoint_interval: The epoch interval (int) to save check-points
+                of the model during training.
+            eval_interval: The epoch interval (int) to evaluate the model
+                during training.
+            learning_rate: The learning rate (float)
+            hard_threshold: The value (float) to use when permanently setting
+                terms to zero during training.
+            hard_threshold_interval: The epoch interval (int) to permanently
+                threshold terms.
+            epochs: The number (int) of epochs to train for.
+            batch_size: The size (int) of a batch in training.
+            clip: The value to use for gradient clipping.
+                Default: 1.0. Use None to disable.
+            gamma_factor: The learning rate decay factor.
+                Default: 0.999. Use None to disable.
+            adam_reg: The regularization for the adam optimizer.
+                Default: 1e-5.
+            run_path: The folder (str) to store tensorboard logs during
+                training.
+            num_workers: The number (int) of workers to use for the dataloader.
+                Default: 1.
         
         Returns:
             self: The fitted HyperSINDy model.
@@ -105,7 +136,7 @@ class HyperSINDy:
 
         return self
     
-    def print(self, fname=None, round=True, seed=None):
+    def print(self, fname=None, round_digits=True, seed=None):
         """Prints the learned equations.
 
         Prints the mean and standard deviation of the equations learned by
@@ -116,19 +147,22 @@ class HyperSINDy:
             fname: The name of the file to print the equations to. The default
                 is None, in which case print is directed to the system standard
                 output.
-            round: Iff True (default), rounds the coefficients to two decimal
-                places.
+            round_digits: Iff True (default), rounds the coefficients to two
+                decimal places.
             seed: The random seed to use before printing. The default is None,
                 in which case the seed is not manually specified.
         
         Returns:
             self: The fitted HyperSINDy model.
         """
-        eqs = self.equations(round, seed)
+        eqs = self.equations(round_digits, seed)
         orig = sys.stdout
         if fname is not None:
             sys.stdout = open(fname, "w")
-        for eq in eqs: print(eq)
+        for stat in eqs:
+            print(stat)
+            for eq in eqs[stat]:
+                print(eq)
         sys.stdout = orig
         return self
     
@@ -164,7 +198,7 @@ class HyperSINDy:
         trajectories = torch.transpose(torch.stack(trajectories, dim=0), 0, 1)
         return trajectories.detach().cpu().numpy()
     
-    def equations(self, round=True, seed=None):
+    def equations(self, round_digits=True, seed=None):
         """Gets the equations.
 
         Returns a list of the mean and standard deviation of the equations
@@ -180,7 +214,7 @@ class HyperSINDy:
             A dictionary with keys {'mean', 'std'}, where the values are the
             learned equations.
         """
-        return get_equations(self.net, self.library, self.device, round, seed)
+        return get_equations(self.net, self.library, self.device, round_digits, seed)
     
     def coefs(self, batch_size=None, z=None):
         """Samples coefficients.
@@ -234,7 +268,7 @@ class HyperSINDy:
         """
         batch_size = x.size(0)
         coefs = self.coefs(batch_size)
-        theta_x = self.transform(x)
+        theta_x = self.transform(x).unsqueeze(1)
         return torch.bmm(theta_x, coefs).squeeze(1)
     
     def save(self, fpath):
@@ -272,9 +306,9 @@ class HyperSINDy:
         return self
 
     def to(self, device):
-        """Wrapped to sets the device.
+        """Sets the device.
 
-        Sets the device to use the model on.
+        Wrapped for set_device. Sets the device to use the model on.
 
         Args:
             device: The cpu or gpu device to use.
@@ -306,8 +340,9 @@ class HyperSINDy:
         self.library = Library(self.x_dim, self.poly_order,
                                self.include_constant)
         self.net = Net(self.library, self.z_dim, self.hidden_dim,
-                       self.stat_batch_size, self.num_hidden).to(device)
+                       self.stat_batch_size, self.num_hidden)
         self.net = self.net.train()
+        self.set_device(device)
         self.dt = dt
         return self
     

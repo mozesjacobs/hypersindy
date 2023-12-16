@@ -11,7 +11,6 @@ from hypersindy.utils import set_random_seed
 
 
 class HyperSINDy:
-#class HyperSINDy(torch.nn.Module):
     """A HyperSINDy model.
 
     The HyperSINDy model that can be fit on data to discover a distribution of
@@ -63,7 +62,7 @@ class HyperSINDy:
             checkpoint_interval=50, eval_interval=50,
             learning_rate=5e-3, hard_threshold=0.05, threshold_interval=100,
             epochs=499, batch_size=250, clip=1.0, gamma_factor=0.999,
-            adam_reg=1e-5, run_path=None):
+            adam_reg=1e-5, run_path=None, num_workers=1):
         """Trains the HyperSINDy model.
 
         Trains the HyperSINDy model on the given data using the given
@@ -96,7 +95,7 @@ class HyperSINDy:
             learning_rate, beta, beta_warmup_epoch, beta_spike, beta_spike_epoch,
             hard_threshold, threshold_interval, epochs, batch_size, lmda_init,
             lmda_spike, lmda_spike_epoch, device, checkpoint_interval,
-            eval_interval, clip, gamma_factor, adam_reg)
+            eval_interval, clip, gamma_factor, adam_reg, num_workers)
 
         # Train
         trainer.train(trainset)
@@ -106,7 +105,7 @@ class HyperSINDy:
 
         return self
     
-    def print(self, fname=None, round=True, seed=None):
+    def print(self, fname=None, round_digits=True, seed=None):
         """Prints the learned equations.
 
         Prints the mean and standard deviation of the equations learned by
@@ -125,11 +124,14 @@ class HyperSINDy:
         Returns:
             self: The fitted HyperSINDy model.
         """
-        eqs = self.equations(round, seed)
+        eqs = self.equations(round_digits, seed)
         orig = sys.stdout
         if fname is not None:
             sys.stdout = open(fname, "w")
-        for eq in eqs: print(eq)
+        for stat in eqs:
+            print(stat)
+            for eq in eqs[stat]:
+                print(eq)
         sys.stdout = orig
         return self
     
@@ -165,7 +167,7 @@ class HyperSINDy:
         trajectories = torch.transpose(torch.stack(trajectories, dim=0), 0, 1)
         return trajectories.detach().cpu().numpy()
     
-    def equations(self, round=True, seed=None):
+    def equations(self, round_digits=True, seed=None):
         """Gets the equations.
 
         Returns a list of the mean and standard deviation of the equations
@@ -181,7 +183,7 @@ class HyperSINDy:
             A dictionary with keys {'mean', 'std'}, where the values are the
             learned equations.
         """
-        return get_equations(self.net, self.library, self.device, round, seed)
+        return get_equations(self.net, self.library, self.device, round_digits, seed)
     
     def coefs(self, batch_size=None, z=None):
         """Samples coefficients.
@@ -235,7 +237,7 @@ class HyperSINDy:
         """
         batch_size = x.size(0)
         coefs = self.coefs(batch_size)
-        theta_x = self.transform(x)
+        theta_x = self.transform(x).unsqueeze(1)
         return torch.bmm(theta_x, coefs).squeeze(1)
     
     def save(self, fpath):
@@ -271,6 +273,19 @@ class HyperSINDy:
         self.net = self.net.eval()
         self.set_device(device)
         return self
+
+    def to(self, device):
+        """Wrapped to sets the device.
+
+        Sets the device to use the model on.
+
+        Args:
+            device: The cpu or gpu device to use.
+        
+        Returns:
+            self: The fitted HyperSINDy model.
+        """
+        return self.set_device(device)
 
     def set_device(self, device):
         """Sets the device.
@@ -309,7 +324,7 @@ class HyperSINDy:
         beta_max_epoch, beta_spike, beta_spike_epoch,
         hard_threshold, threshold_interval, epochs, batch_size, lmda_init,
         lmda_spike, lmda_spike_epoch, device, checkpoint_interval,
-        eval_interval, clip, gamma_factor, adam_reg):
+        eval_interval, clip, gamma_factor, adam_reg, num_workers):
         """
         Returns a Trainer.
         """
@@ -335,5 +350,5 @@ class HyperSINDy:
                           lmda_init, lmda_max, lmda_max_epoch,
                           lmda_spike, lmda_spike_epoch,
                           clip, device, checkpoint_interval,
-                          eval_interval)
+                          eval_interval, num_workers)
         return trainer
