@@ -7,7 +7,7 @@ from hypersindy.library import Library
 from hypersindy.dataset import DynamicDataset
 from hypersindy.trainer import Trainer
 from hypersindy.equations import get_equations
-from hypersindy.utils import set_random_seed
+from hypersindy.utils import set_random_seed, init_weights
 
 
 class HyperSINDy:
@@ -146,7 +146,7 @@ class HyperSINDy:
         Args:
             fname: The name of the file to print the equations to. The default
                 is None, in which case print is directed to the system standard
-                output.
+                output. If fname doesn't end with .txt, appends .txt to it.
             round_digits: Iff True (default), rounds the coefficients to two
                 decimal places.
             seed: The random seed to use before printing. The default is None,
@@ -158,6 +158,7 @@ class HyperSINDy:
         eqs = self.equations(round_digits, seed)
         orig = sys.stdout
         if fname is not None:
+            fname = self.__fix_fpath(fname, ".txt")
             sys.stdout = open(fname, "w")
         for stat in eqs:
             print(stat)
@@ -197,6 +198,39 @@ class HyperSINDy:
             trajectories.append(xt)
         trajectories = torch.transpose(torch.stack(trajectories, dim=0), 0, 1)
         return trajectories.detach().cpu().numpy()
+
+    def simulate_mean(self, x0, ts=10000, seed=None, dt=None):
+        """Generate a trajectory with the mean equation.
+
+        Generates a trajectory using the mean of the discovered equations.
+
+        Args:
+            x0: The initial condition (torch.Tensor of shape (x_dim)).
+            ts: The number (int) of timesteps to simulate, including the
+                provided initial condition. The default is 10000.
+            seed: The random seed (int) to use. The default is None.
+            dt: The time between adjacent state observations. The default
+                is None, in which case self.dt is used.
+        
+        Returns:
+            The sampled trajectories as numpy array of shape
+            (batch_size, ts, x_dim).
+        """
+        if seed is not None:
+            set_random_seed(seed)
+        if dt is None:
+            dt = self.dt
+        xt = x0.type(torch.FloatTensor).to(self.device)
+        xt = xt.unsqueeze(0)
+        trajectories = [xt]
+        coefs = self.coefs().mean(0)
+        for i in range(ts - 1):
+            theta_x = self.transform(xt)
+            xt = xt + torch.matmul(theta_x, coefs) * dt
+            trajectories.append(xt)
+        trajectories = torch.transpose(torch.stack(trajectories, dim=0), 0, 1)
+        return trajectories.squeeze().detach().cpu().numpy()
+
     
     def equations(self, round_digits=True, seed=None):
         """Gets the equations.
@@ -277,12 +311,13 @@ class HyperSINDy:
         Saves the state dictionary of the learned network to the given fpath.
 
         Args:
-            fpath: The name of the file to save the state dictionary to. Must
-                end in .pt.
+            fpath: The name of the file to save the state dictionary to. Should
+                end in .pt. If fpath doesn't end with .pt, appends .pt to it.
         
         Returns:
             self: The fitted HyperSINDy model.
         """
+        fpath = self.__fix_fpath(fpath, ".pt")
         torch.save(self.net.state_dict(), fpath)
         return self
     
@@ -293,12 +328,14 @@ class HyperSINDy:
         Loads the network in eval mode.
 
         Args:
-            fpath: The name of the file to load the state dictionary from. Must
-                end in .pt.
+            fpath: The name of the file to load the state dictionary from.
+                Should end in .pt. If fpath does not end in .pt, appends .pt
+                to it.
         
         Returns:
             self: The fitted HyperSINDy model.
         """
+        fpath = self.__fix_fpath(fpath, ".pt")
         self.__reset()
         self.net.load_state_dict(torch.load(fpath))
         self.net = self.net.eval()
@@ -341,6 +378,7 @@ class HyperSINDy:
                                self.include_constant)
         self.net = Net(self.library, self.z_dim, self.hidden_dim,
                        self.stat_batch_size, self.num_hidden)
+        self.net.apply(init_weights)
         self.net = self.net.train()
         self.set_device(device)
         self.dt = dt
@@ -384,3 +422,12 @@ class HyperSINDy:
                           clip, device, checkpoint_interval,
                           eval_interval, num_workers)
         return trainer
+
+    def __fix_fpath(self, fname, end):
+        """
+        If fname does not end with end, returns fname + end. If fname ends with
+        end, returns fname.
+        """
+        if not fname.endswith(end):
+            fname += end
+        return fname
