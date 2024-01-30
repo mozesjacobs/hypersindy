@@ -39,7 +39,7 @@ class DynamicDataset(Dataset):
         """
         self.x = x
         self.x_lib = x_lib
-        self.x_dot = self.fourth_order_diff(self.x, dt)
+        self.x_dot = fourth_order_diff(self.x, dt)
         self.x_dot_standard = (self.x_dot - self.x_dot.mean(0)) / self.x_dot.std(0)
 
     def __len__(self):
@@ -76,27 +76,27 @@ class DynamicDataset(Dataset):
         """
         return self.x[idx], self.x_lib[idx], self.x_dot[idx], self.x_dot_standard[idx]
 
-    def fourth_order_diff(self, x, dt):
-        """Gets the derivatives of the data.
+def fourth_order_diff(x, dt):
+    """Gets the derivatives of the data.
 
-        Gets the derivative of x with respect to time using fourth order
-        differentiation.
-        The code for this function was taken from:
-        https://github.com/urban-fasel/EnsembleSINDy
+    Gets the derivative of x with respect to time using fourth order
+    differentiation.
+    The code for this function was taken from:
+    https://github.com/urban-fasel/EnsembleSINDy
 
-        Args:
-            x: The data (torch.Tensor of shape (timesteps x x_dim)) to
-                differentiate.
-            dt: The amount of time between two adjacent data points (i.e.,
-                the time between x[0] and x[1], or x[1] and x[2]).
+    Args:
+        x: The data (torch.Tensor of shape (timesteps x x_dim)) to
+            differentiate.
+        dt: The amount of time between two adjacent data points (i.e.,
+            the time between x[0] and x[1], or x[1] and x[2]).
 
-        Returns:
-            A torch.tensor of the derivatives of x.
-        """
-        dx = torch.zeros(x.size())
-        dx[0] = (-11.0 / 6) * x[0] + 3 * x[1] - 1.5 * x[2] + x[3] / 3
-        dx[1] = (-11.0 / 6) * x[1] + 3 * x[2] - 1.5 * x[3] + x[4] / 3
-        dx[2:-2] = (-1.0 / 12) * x[4:] + (2.0 / 3) * x[3:-1] - (2.0 / 3) * x[1:-3] + (1.0 / 12) * x[:-4]
-        dx[-2] = (11.0 / 6) * x[-2] - 3.0 * x[-3] + 1.5 * x[-4] - x[-5] / 3.0
-        dx[-1] = (11.0 / 6) * x[-1] - 3.0 * x[-2] + 1.5 * x[-3] - x[-4] / 3.0
-        return dx / dt
+    Returns:
+        A torch.tensor of the derivatives of x.
+    """
+    dx = torch.zeros(x.size())
+    dx[0] = (-11.0 / 6) * x[0] + 3 * x[1] - 1.5 * x[2] + x[3] / 3
+    dx[1] = (-11.0 / 6) * x[1] + 3 * x[2] - 1.5 * x[3] + x[4] / 3
+    dx[2:-2] = (-1.0 / 12) * x[4:] + (2.0 / 3) * x[3:-1] - (2.0 / 3) * x[1:-3] + (1.0 / 12) * x[:-4]
+    dx[-2] = (11.0 / 6) * x[-2] - 3.0 * x[-3] + 1.5 * x[-4] - x[-5] / 3.0
+    dx[-1] = (11.0 / 6) * x[-1] - 3.0 * x[-2] + 1.5 * x[-3] - x[-4] / 3.0
+    return dx / dt

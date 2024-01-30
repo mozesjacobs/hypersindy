@@ -12,8 +12,10 @@ dependencies:
   - jupyterlab
   - pip
   - pip:
-    - numpy
+    - numpy==1.23.5
     - pysindy
     - tqdm
     - torch
     - torchvision
+    - pydaddy
+    - kramersmoyal    
